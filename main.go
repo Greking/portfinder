@@ -24,6 +24,8 @@ var (
 	ipver6    bool
 	ipver     string
 	tolerance bool
+	silence   bool
+	noPID     bool
 	help      bool
 )
 
@@ -68,31 +70,11 @@ func usage() {
 }
 
 func errOut(a ...interface{}) {
-	fmt.Fprintln(os.Stderr, a)
+	if !silence {
+		fmt.Fprintln(os.Stderr, a)
+	}
 	if !tolerance {
 		os.Exit(1)
-	}
-}
-
-func init() {
-	flag.BoolVar(&ipver4, "4", false, "use IPv4")
-	flag.BoolVar(&ipver6, "6", true, "use IPv6")
-	flag.BoolVar(&tolerance, "t", false, "if set, the program will continue till the end despite errors")
-	flag.BoolVar(&help, "h", false, "display help text")
-	flag.BoolVar(&help, "help", false, "display help text")
-	flag.BoolVar(&help, "-help", false, "display help text")
-	flag.Parse()
-
-	if len(flag.Args()) == 0 || help {
-		usage()
-	}
-
-	progs = flag.Args()
-	switch {
-	case ipver4:
-		ipver = ""
-	case ipver6:
-		ipver = "6"
 	}
 }
 
@@ -124,6 +106,30 @@ func readAllProc() map[string]PIDPORT {
 	}
 
 	return searches
+}
+
+func init() {
+	flag.BoolVar(&ipver4, "4", false, "use IPv4")
+	flag.BoolVar(&ipver6, "6", true, "use IPv6")
+	flag.BoolVar(&tolerance, "t", false, "if set, the program will continue till the end despite errors")
+	flag.BoolVar(&noPID, "n", false, "do not display the PID of the processes")
+	flag.BoolVar(&silence, "s", false, "do not display error messages")
+	flag.BoolVar(&help, "h", false, "display help text")
+	flag.BoolVar(&help, "help", false, "display help text")
+	flag.BoolVar(&help, "-help", false, "display help text")
+	flag.Parse()
+
+	if len(flag.Args()) == 0 || help {
+		usage()
+	}
+
+	progs = flag.Args()
+	switch {
+	case ipver4:
+		ipver = ""
+	case ipver6:
+		ipver = "6"
+	}
 }
 
 func main() {
@@ -173,6 +179,13 @@ func main() {
 			}
 		}
 
-		fmt.Println(prog, searches[prog].PID, searches[prog].Port)
+		if searches[prog].Port == "" {
+			continue
+		}
+		if !noPID {
+			fmt.Println(prog, searches[prog].PID, searches[prog].Port)
+		} else {
+			fmt.Println(prog, searches[prog].Port)
+		}
 	}
 }
